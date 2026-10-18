@@ -1,0 +1,69 @@
+{
+  "width": 834,
+  "diagnostics": [
+    {
+      "screen": "Ofertas Shopee",
+      "scrollWidth": 834,
+      "viewport": 834,
+      "unnamed": [],
+      "tinyTargets": []
+    },
+    {
+      "screen": "Estúdio criativo",
+      "scrollWidth": 834,
+      "viewport": 834,
+      "unnamed": [],
+      "tinyTargets": []
+    },
+    {
+      "screen": "Fila de publicação",
+      "scrollWidth": 834,
+      "viewport": 834,
+      "unnamed": [],
+      "tinyTargets": []
+    },
+    {
+      "screen": "Canais",
+      "scrollWidth": 834,
+      "viewport": 834,
+      "unnamed": [],
+      "tinyTargets": []
+    },
+    {
+      "screen": "Mensagens",
+      "scrollWidth": 834,
+      "viewport": 834,
+      "unnamed": [],
+      "tinyTargets": []
+    },
+    {
+      "screen": "Cupons",
+      "scrollWidth": 834,
+      "viewport": 834,
+      "unnamed": [],
+      "tinyTargets": [
+        {
+          "text": "",
+          "w": 13,
+          "h": 17
+        }
+      ]
+    },
+    {
+      "screen": "Integrações",
+      "scrollWidth": 834,
+      "viewport": 834,
+      "unnamed": [],
+      "tinyTargets": []
+    },
+    {
+      "screen": "Preferências",
+      "scrollWidth": 834,
+      "viewport": 834,
+      "unnamed": [],
+      "tinyTargets": []
+    }
+  ],
+  "errors": [],
+  "failed": []
+}

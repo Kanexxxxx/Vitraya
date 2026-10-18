@@ -1,0 +1,7 @@
+# LF em todo texto; o atalho .cmd precisa de CRLF para o cmd.exe.
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.png binary
+*.jpg binary
+*.webp binary
+*.zip binary

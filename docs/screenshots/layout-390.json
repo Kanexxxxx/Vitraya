@@ -1,0 +1,69 @@
+{
+  "width": 390,
+  "diagnostics": [
+    {
+      "screen": "Ofertas Shopee",
+      "scrollWidth": 390,
+      "viewport": 390,
+      "unnamed": [],
+      "tinyTargets": []
+    },
+    {
+      "screen": "Estúdio criativo",
+      "scrollWidth": 390,
+      "viewport": 390,
+      "unnamed": [],
+      "tinyTargets": []
+    },
+    {
+      "screen": "Fila de publicação",
+      "scrollWidth": 390,
+      "viewport": 390,
+      "unnamed": [],
+      "tinyTargets": []
+    },
+    {
+      "screen": "Canais",
+      "scrollWidth": 390,
+      "viewport": 390,
+      "unnamed": [],
+      "tinyTargets": []
+    },
+    {
+      "screen": "Mensagens",
+      "scrollWidth": 390,
+      "viewport": 390,
+      "unnamed": [],
+      "tinyTargets": []
+    },
+    {
+      "screen": "Cupons",
+      "scrollWidth": 390,
+      "viewport": 390,
+      "unnamed": [],
+      "tinyTargets": [
+        {
+          "text": "",
+          "w": 13,
+          "h": 17
+        }
+      ]
+    },
+    {
+      "screen": "Integrações",
+      "scrollWidth": 390,
+      "viewport": 390,
+      "unnamed": [],
+      "tinyTargets": []
+    },
+    {
+      "screen": "Preferências",
+      "scrollWidth": 390,
+      "viewport": 390,
+      "unnamed": [],
+      "tinyTargets": []
+    }
+  ],
+  "errors": [],
+  "failed": []
+}

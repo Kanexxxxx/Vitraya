@@ -1,0 +1,12 @@
+node_modules/
+dist/
+data/
+.env*
+!.env.example
+referencias/
+test-results/
+playwright-report/
+*.log
+
+# Pacotes ZIP de retomada (cópias do próprio código-fonte)
+/*.zip

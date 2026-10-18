@@ -1,0 +1,30 @@
+# Contrato da aplicação
+
+Todas as APIs retornam JSON e falhas `{error}` com HTTP 4xx/5xx. Preços em centavos inteiros. Dados somente locais, não importar arquivos reais automaticamente.
+
+Product: `{id,title,marketplace,price,originalPrice,coupon,affiliateUrl,image,category,description,tags,status,createdAt,updatedAt}`. Marketplace: `shein|shopee|mercadolivre|tiktok|amazon|outro`. status: `draft|ready|archived`. image é `/media/...` ou vazio; upload separado. tags array strings.
+
+- GET /api/state -> `{products, campaigns, channels, templates, coupons, settings, activity, integrations}`; não retorna tokens/chaves. GET /api/health -> `{ok,app,version}`.
+- POST /api/products -> produto. PUT /api/products/:id -> produto. DELETE -> `{ok:true}`
+- POST /api/media (multipart field file) -> `{url,name}` aceita PNG/JPG/WebP até 10 MB, rejeita SVG/HTML.
+- POST /api/import/preview (multipart field file CSV/JSON/XLSX, até 10MB) -> `{rows,errors,warnings}`. Linhas normalizadas sem salvar; erros com número da linha e mensagem. Preservar link fornecido literalmente.
+- POST /api/import/commit `{rows}` -> `{imported,skipped,errors}`. Tudo validado no servidor; dedupe por link exato. Nenhuma linha inválida silenciosa.
+- GET /api/export?format=json|csv|xlsx -> download catálogo.
+- GET /api/backup -> ZIP lógico + imagens: até 50 MB, até 5.000 registros por lista e mídias até 10 MB; estimativa acima do limite retorna 413 antes de gerar o arquivo. POST /api/restore (ZIP) -> restauração validada e aditiva, sem sobrescrever existentes; cupons incluídos, credenciais/recibos excluídos, preferências atuais preservadas, campanhas restauradas com `deliveryMode:manual`.
+- POST /api/campaigns `{productId,channelId,scheduledAt,message,templateId?,deliveryMode?,confirmAutomatic?}` -> campanha `{id,productId,channelId,scheduledAt,message,status,createdAt,templateId,deliveryMode,...}`. `deliveryMode` é `manual` (padrão), `telegram` ou `evolution`. Modos automáticos exigem `confirmAutomatic:true`, teste de conexão vigente e destino válido; Telegram exige teste de permissão no destino específico. A campanha guarda fingerprints do produto/configuração e o destino autorizado.
+- Status de campanha: `scheduled|ready|sending|done|failed|unknown|cancelled`. GET /api/state atualiza vencidas para ready. Worker do servidor processa automaticamente somente os modos autorizados, sem retry automático. Mudança de conteúdo, configuração ou destino impede o envio. Reinício transforma `sending` em `unknown`; tentativas de envio em andamento tornam-se `unconfirmed`.
+- PUT /api/campaigns/:id `{status}` aceita `scheduled|ready|done|cancelled`; campanhas automáticas só podem ser concluídas/canceladas por esta rota, sem rearmar envio por troca de status. DELETE remove; item em envio não pode ser alterado/removido. Deduplicação usa produto/canal/mensagem/horário/modo/modelo.
+- POST /api/channels `{name,type,url}` -> canal `{id,name,type,url}`; tipos whatsapp|telegram|instagram|tiktok|email|outro. DELETE /api/channels/:id.
+- POST /api/templates `{name,body}` -> template `{id,name,body}`. PUT /api/templates/:id. DELETE.
+- PUT /api/settings `{brand,accent,signature}` -> settings. Sem credenciais no browser.
+- GET /api/integrations -> lista de marketplaces `{id,name,status,description,url}`; importação/preservação de links disponível, sem geração automática ou sincronização.
+- GET /api/coupons -> lista de cupons. POST cria, PUT /api/coupons/:id mescla e revalida, DELETE remove. Campos `{id,code,marketplace,type,value,minSpend,maxDiscount,startsAt,expiresAt,productIds,category,active}`. `type=percent` exige inteiro 1..100; `fixed` usa centavos positivos. Mínimo/teto em centavos, teto 0 sem limite adicional. Lista de IDs e categoria são mutuamente exclusivos; ambos vazios representam todos do marketplace. Início inclusivo/fim exclusivo. Simulação pura via `bestCoupon` retorna `null` ou `{coupon,discount,finalPrice}`, sem acumular cupons nem modificar produto.
+- GET /api/connectors -> Telegram/Evolution com configuração pública sem segredo e estado `credentials_required|configured|connected|error`. `connected` representa teste de acesso, não mensagem entregue. PUT /api/connectors/:id configura; DELETE remove credenciais locais (variáveis de ambiente têm precedência e não são editáveis por estas rotas).
+- Configuração Telegram: `{botToken,chatId}`. Configuração Evolution: `{baseUrl,apiKey,instance,number}`. `baseUrl` admite HTTPS público ou HTTP de loopback; rede privada/metadados e redirects são recusados. Evolution aceita número internacional ou grupo `@g.us`, sem Canais `@newsletter`.
+- POST /api/connectors/:id/test `{channelId?}` testa sem enviar: Telegram `getMe/getChat/getChatMember`, Evolution `connectionState` aberto. POST /api/connectors/:id/send `{productId,channelId?,message,confirm:true,idempotencyKey?}` envia foto original local e legenda ou texto. Telegram limita texto a 4.096 e legenda da foto a 1.024 caracteres, separando texto quando necessário; Evolution limita mensagem a 12.000. SVG fictício não é mídia enviável.
+- Recibo `{ok,id,connectorId,productId,channelId,createdAt,status,messageIds,error?,reused?}`. Status `sending|sent|partial|unconfirmed`; falha/resultado incerto responde 502. Repetir a mesma chave e conteúdo devolve o recibo persistido, sem novo envio; reutilizar chave com outro conteúdo retorna 409. `sent` significa aceitação com ID do provedor, sem comprovar entrega/leitura. Não há repetição automática após falha.
+- POST /api/demo -> cria conjunto fictício claramente marcado, apenas se catálogo vazio.
+
+Autenticação local: bind loopback, validação Host/Origin e cabeçalho X-Vitraya-Client para mutações. CORS não liberado. Limite de payload. Sem fetch arbitrário remoto de imagem (SSRF).
+
+CLI `npm start` usa porta 4317 e dados em `%LOCALAPPDATA%\VitrayaStudio\data` no Windows; `VITRAYA_DATA_DIR` pode sobrescrever. Credenciais ficam em `private/connectors.json`, com permissões restritas, ou em variáveis de ambiente; nunca são servidas como arquivo estático ou incluídas no backup lógico. O app é web local de uso pessoal, sem autenticação multiusuário nem hospedagem pública.

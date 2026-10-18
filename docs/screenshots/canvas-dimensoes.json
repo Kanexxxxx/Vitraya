@@ -1,0 +1,71 @@
+{
+  "colors": [
+    {
+      "id": "boutique",
+      "format": "quadrado",
+      "pixel": "238,232,245",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "id": "boutique",
+      "format": "feed",
+      "pixel": "238,232,245",
+      "width": 1080,
+      "height": 1350
+    },
+    {
+      "id": "boutique",
+      "format": "story",
+      "pixel": "238,232,245",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "direta",
+      "format": "quadrado",
+      "pixel": "255,218,60",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "id": "direta",
+      "format": "feed",
+      "pixel": "255,218,60",
+      "width": 1080,
+      "height": 1350
+    },
+    {
+      "id": "direta",
+      "format": "story",
+      "pixel": "255,218,60",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "essencial",
+      "format": "quadrado",
+      "pixel": "244,247,251",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "id": "essencial",
+      "format": "feed",
+      "pixel": "244,247,251",
+      "width": 1080,
+      "height": 1350
+    },
+    {
+      "id": "essencial",
+      "format": "story",
+      "pixel": "244,247,251",
+      "width": 1080,
+      "height": 1920
+    }
+  ],
+  "jpgSize": [
+    1080,
+    1080
+  ]
+}

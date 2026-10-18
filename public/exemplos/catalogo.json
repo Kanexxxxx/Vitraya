@@ -1,0 +1,54 @@
+[
+  {
+    "title": "Exemplo fictício — bolsa casual",
+    "marketplace": "shein",
+    "price": 8990,
+    "originalPrice": 11990,
+    "coupon": "EXEMPLO10",
+    "affiliateUrl": "https://example.test/ofertas/bolsa?ref=demo",
+    "image": "",
+    "category": "Acessórios",
+    "description": "Produto fictício para testar o catálogo local.",
+    "tags": ["exemplo"],
+    "status": "draft"
+  },
+  {
+    "title": "Exemplo fictício — fone sem fio",
+    "marketplace": "shopee",
+    "price": 12990,
+    "originalPrice": 15990,
+    "coupon": "DEMO15",
+    "affiliateUrl": "https://example.test/ofertas/fone?ref=demo",
+    "image": "",
+    "category": "Eletrônicos",
+    "description": "Produto fictício para testar o catálogo local.",
+    "tags": ["exemplo"],
+    "status": "draft"
+  },
+  {
+    "title": "Exemplo fictício — luminária de mesa",
+    "marketplace": "mercadolivre",
+    "price": 7450,
+    "originalPrice": 9990,
+    "coupon": "",
+    "affiliateUrl": "https://example.test/ofertas/luminaria?ref=demo",
+    "image": "",
+    "category": "Casa",
+    "description": "Produto fictício para testar o catálogo local.",
+    "tags": ["exemplo"],
+    "status": "draft"
+  },
+  {
+    "title": "Exemplo fictício — tênis casual",
+    "marketplace": "tiktok",
+    "price": 17990,
+    "originalPrice": 22990,
+    "coupon": "EXEMPLO20",
+    "affiliateUrl": "https://example.test/ofertas/tenis?ref=demo",
+    "image": "",
+    "category": "Calçados",
+    "description": "Produto fictício para testar o catálogo local.",
+    "tags": ["exemplo"],
+    "status": "draft"
+  }
+]
