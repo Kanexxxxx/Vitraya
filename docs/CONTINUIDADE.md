@@ -66,3 +66,10 @@
   1. Conectar por **QR Code** na própria tela, como no painel de referência.
   2. Listar grupos e canais da instância.
   3. Envio em massa com limite diário (6 a 10) e **intervalo aleatório de 2 a 5 min**, no número de teste.
+
+## 18/10/2026 — etapas em paralelo com agentes
+
+- A pedido do titular: um agente por etapa, trabalhando em paralelo, e um supervisor que aprova ou reprova. Base em módulos `51ad970`; coordenação em `docs/execucao/COORDENACAO-ETAPAS.md`; contrato em `docs/ARQUITETURA-MODULOS.md`.
+- As etapas são: 1 WhatsApp por QR Code, 2 Automação 24 h, 3 Segurança, 4 Painel/histórico/perfil e 5 Feed e links de todas as lojas.
+- Menu novo por seções (Painel, Canais, Envios, Automações, Criação, Conta). A barra lateral passou a rolar, porque os itens de baixo ficavam inalcançáveis.
+- Próxima ação: cada agente entrega no próprio ramo, o supervisor revisa e o coordenador junta no `main` na ordem prevista.
