@@ -93,3 +93,7 @@
 .assoc-head strong{display:block;font-size:13px;color:var(--ink);margin-bottom:3px}.assoc-head small{color:var(--muted);line-height:1.6}
 .assoc-actions{display:flex;gap:10px;flex-wrap:wrap}
 @media(max-width:740px){.image-association{margin:18px 20px}.assoc-actions .button{flex:1}}
+/* Menu em seções: a barra lateral rola quando não cabe na altura da tela (como no painel de referência). */
+.sidebar{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.nav-label.second{margin-top:18px}
+.nav-item{min-height:38px;padding-top:9px;padding-bottom:9px}

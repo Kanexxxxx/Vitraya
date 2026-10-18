@@ -139,3 +139,12 @@ test('cupons têm CRUD persistente, backup aditivo e escopo remapeado sem mudar 
   const backup=await (await source.request('/api/backup')).arrayBuffer(),restored=await json(await dest.request('/api/restore',{method:'POST',body:form(backup,'backup.zip')}));assert.equal(restored.coupons,1);const coupons=await json(await dest.request('/api/coupons'));assert.deepEqual(coupons[0].productIds,[existing.id]);assert.equal((await json(await dest.request('/api/state'))).products[0].price,12990);
   await json(await dest.request('/api/coupons/'+coupons[0].id,{method:'DELETE'}));assert.equal((await json(await dest.request('/api/coupons'))).length,0);
 });
+
+test('base das etapas: módulos aparecem no estado e tabela de módulo exige nome seguro',async t=>{
+  const f=await fixture(t);
+  const state=await json(await f.request('/api/state'));
+  assert.deepEqual(Object.keys(state.modules).sort(),['automation','dashboard','links','security','whatsapp']);
+  assert.throws(()=>f.app.store.ensureTable('produtos; DROP TABLE products'),/inválido/);assert.throws(()=>f.app.store.ensureTable('settings'),/inválido/);
+  assert.equal(f.app.store.ensureTable('wa_teste'),'wa_teste');f.app.store.save('wa_teste',{id:'1',ok:true});assert.equal(f.app.store.get('wa_teste','1').ok,true);
+  await json(await f.request('/api/rota-que-nao-existe'),404);
+});

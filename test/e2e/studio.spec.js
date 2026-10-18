@@ -100,7 +100,7 @@ test('fluxo pessoal: CRUD, importação com foto, mensagens, fila sem duplicar, 
  await page.getByRole('button',{name:'Publicadas',exact:true}).click();
  await expect(page.locator('.queue-item')).toHaveCount(1);expect((await state(page)).campaigns[0].status).toBe('done');
 
- await nav(page,'Preferências');
+ await nav(page,'Perfil e configurações');
  await page.getByLabel('Nome nas artes',{exact:true}).fill('Curadoria fictícia QA');
  await page.getByLabel('Assinatura da mensagem').fill('Apenas dados fictícios de teste');
  await page.getByRole('button',{name:'Salvar preferências',exact:true}).click();
@@ -172,7 +172,7 @@ test('cupons, favoritos e conexões não configuradas pelo UI, sem envio real',a
  await screenshot(page,'cupons-simulacao-1440');
  await page.getByRole('button',{name:'Excluir cupom',exact:true}).click();await page.getByRole('button',{name:'Confirmar exclusão de QA20',exact:true}).click();
  await expect(page.getByRole('heading',{name:'QA20 · 10%',exact:true})).toHaveCount(0);expect((await state(page)).coupons).toHaveLength(0);
- await nav(page,'Integrações');await expect(page.getByRole('heading',{name:'Conectar publicação',exact:true})).toBeVisible();
+ await nav(page,'Outras conexões');await expect(page.getByRole('heading',{name:'Conectar publicação',exact:true})).toBeVisible();
  const connectors=await (await page.request.get('/api/connectors')).json();expect(connectors).toHaveLength(2);expect(connectors.every(c=>!c.configured)).toBe(true);
  await expect(page.locator('.connections-section')).not.toContainText('Conectado');
  await nav(page,'Estúdio criativo');await canvasReady(page);await page.getByRole('button',{name:'Enviar por conexão',exact:true}).click();
@@ -200,11 +200,11 @@ for(const width of [1440,834,390])test('QA visual e navegação sem overflow em 
  await page.goto('/');await page.getByRole('button',{name:'Explorar com exemplos fictícios',exact:true}).click();
  await expect(page.locator('.product-card')).toHaveCount(4);await assertNoOverflow(page);await screenshot(page,'catalogo-'+width);
  const diagnostics=[];
- for(const label of ['Ofertas Shopee','Estúdio criativo','Fila de publicação','Canais','Mensagens','Cupons','Integrações','Preferências']){
+ for(const label of ['Início','Buscar e colar links','WhatsApp','Outras conexões','Fila de publicação','Histórico de envios','Cupons','Automação de envios','Estúdio criativo','Mensagens','Canais','Perfil e configurações','Segurança']){
   await nav(page,label);if(label==='Estúdio criativo')await canvasReady(page);
   await assertNoOverflow(page);
   const layout=await page.evaluate(()=>{const els=[...document.querySelectorAll('main button,main input,main select,main textarea,main a')].filter(e=>e.getBoundingClientRect().width&&getComputedStyle(e).visibility!=='hidden');return {scrollWidth:document.documentElement.scrollWidth,viewport:innerWidth,unnamed:els.filter(e=>!e.textContent.trim()&&!e.getAttribute('aria-label')&&!e.closest('label')).map(e=>e.outerHTML.slice(0,180)),tinyTargets:els.filter(e=>{const r=e.getBoundingClientRect();return r.width<24||r.height<24;}).map(e=>({text:e.textContent.trim().slice(0,50),w:e.getBoundingClientRect().width,h:e.getBoundingClientRect().height}))};});diagnostics.push({screen:label,...layout});expect(layout.unnamed).toEqual([]);
-  if(['Estúdio criativo','Integrações','Cupons'].includes(label))await screenshot(page,(label==='Estúdio criativo'?'studio':label==='Cupons'?'cupons':'integracoes')+'-'+width);
+  if(['Estúdio criativo','Outras conexões','Cupons'].includes(label))await screenshot(page,(label==='Estúdio criativo'?'studio':label==='Cupons'?'cupons':'integracoes')+'-'+width);
  }
  await nav(page,'Catálogo');await page.getByRole('button',{name:'Novo produto',exact:true}).click();const modal=page.getByRole('dialog',{name:'Um novo achado'});await expect(modal).toBeVisible();await expect(modal).toHaveAccessibleName('Um novo achado');await assertNoOverflow(page);await screenshot(page,'produto-dialogo-'+width);await page.keyboard.press('Escape');await expect(modal).toHaveCount(0);
  await mkdir(shots,{recursive:true});await writeFile(path.join(shots,'layout-'+width+'.json'),JSON.stringify({width,diagnostics,errors,failed},null,2));expect(errors).toEqual([]);expect(failed).toEqual([]);

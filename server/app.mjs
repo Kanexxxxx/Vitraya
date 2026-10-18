@@ -5,11 +5,12 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import JSZip from 'jszip';
 import { Store } from './store.mjs';
-import { ApiError, id, now, object, text, product, channel, template, settings, integrations, CAMPAIGN_STATUSES, sniffImage } from './validation.mjs';
+import { ApiError, id, now, object, text, url as validUrl, product, channel, template, settings, integrations, CAMPAIGN_STATUSES, sniffImage } from './validation.mjs';
 import { previewImport, csvExport, xlsxExport } from './imports.mjs';
 import { validateZipStructure } from './zip.mjs';
 import { MB,FILE_LIMIT,BACKUP_LIMITS } from './limits.mjs';
-import { Connectors } from './connectors.mjs';
+import { Connectors, restrictPrivate, requestGateway } from './connectors.mjs';
+import { modules as moduleDefs } from './modules/index.mjs';
 import { ShopeeAffiliate } from './shopee.mjs';
 import { validateCoupon } from './coupons.mjs';
 
@@ -42,15 +43,19 @@ function notFound(){throw new ApiError('Registro não encontrado.',404);}
 function productFingerprint(p){return p?createHash('sha256').update(JSON.stringify([p.title,p.image,p.price,p.originalPrice,p.coupon,p.affiliateUrl])).digest('hex'):'';}
 function processAlive(pid){if(!Number.isSafeInteger(pid)||pid<=0)return false;try{process.kill(pid,0);return true;}catch(error){return error.code==='EPERM';}}
 
-export function createApp({dataDir=path.resolve('data'),staticDir=path.resolve('dist'),allowedOrigins=[],connectorOptions={},shopeeOptions={},queueIntervalMs=1000}={}) {
+export function createApp({dataDir=path.resolve('data'),staticDir=path.resolve('dist'),allowedOrigins=[],connectorOptions={},shopeeOptions={},moduleOptions={},queueIntervalMs=1000}={}) {
   dataDir=path.resolve(dataDir);staticDir=path.resolve(staticDir);const mediaDir=path.join(dataDir,'media');mkdirSync(mediaDir,{recursive:true});const store=new Store(dataDir);const connectors=new Connectors({dataDir,mediaDir,store,...connectorOptions});const shopee=new ShopeeAffiliate({dataDir,mediaDir,store,saveProduct,...shopeeOptions});
+  // Etapas em paralelo: cada módulo recebe o contexto comum (docs/ARQUITETURA-MODULOS.md).
+  const registry=new Map();
+  const moduleContext={store,dataDir,mediaDir,privateDir:path.join(dataDir,'private'),connectors,shopee,saveProduct,modules:registry,helpers:{jsonBody,multipart,send,notFound,text,url:validUrl,ApiError,id,now,restrictPrivate,requestGateway,sniffImage,productFingerprint}};
+  for(const definition of moduleDefs)registry.set(definition.name,definition.create({...moduleContext,options:moduleOptions[definition.name]??{}}));
   const coupon=input=>{try{return validateCoupon(input);}catch(error){throw new ApiError(error.message);}};
   function ensureImage(value){if(value.startsWith('/media/')&&!existsSync(path.join(mediaDir,value.slice(7))))throw new ApiError('Imagem não encontrada. Envie o arquivo antes de salvar.');}
   function saveProduct(input,previous=null){const value=product(input);ensureImage(value.image);if(value.affiliateUrl&&store.all('products').some(p=>p.affiliateUrl===value.affiliateUrl&&p.id!==previous?.id))throw new ApiError('Este link afiliado já está no catálogo.',409);return store.save('products',{...value,id:previous?.id??id(),createdAt:previous?.createdAt??now(),updatedAt:now()});}
   for(const c of store.all('campaigns'))if(c.status==='sending'&&!processAlive(c.workerPid))store.save('campaigns',{...c,status:'unknown',deliveryError:'O aplicativo foi interrompido durante o envio. Confira o destino; nenhuma repetição automática será feita.'});
   for(const delivery of store.all('deliveries'))if(delivery.status==='sending'&&!processAlive(delivery.workerPid))store.save('deliveries',{...delivery,status:'unconfirmed',error:'Aplicativo interrompido durante esta tentativa. Confira o destino antes de criar outro envio.'});
   function campaign(input){object(input);const productId=text(input.productId,'Produto',100,true),channelId=text(input.channelId,'Canal',100,true),selectedProduct=store.get('products',productId);if(!selectedProduct)throw new ApiError('Produto da campanha não encontrado.');const selectedChannel=store.get('channels',channelId);if(!selectedChannel)throw new ApiError('Canal da campanha não encontrado.');const deliveryMode=input.deliveryMode??'manual';if(!['manual','telegram','evolution'].includes(deliveryMode))throw new ApiError('Modo de envio inválido.');if(deliveryMode!=='manual'&&input.confirmAutomatic!==true)throw new ApiError('Autorize explicitamente o envio automático desta campanha.');const prepared=deliveryMode==='manual'?{}:{...connectors.assertReady(deliveryMode,selectedChannel),productFingerprint:productFingerprint(selectedProduct)};const message=text(input.message,'Mensagem',deliveryMode==='telegram'?4096:12000,true);const date=input.scheduledAt?new Date(input.scheduledAt):new Date();if(Number.isNaN(date.getTime()))throw new ApiError('Data da campanha inválida.');if(input.templateId&&!store.get('templates',input.templateId))throw new ApiError('Modelo não encontrado.');return {id:id(),productId,channelId,scheduledAt:date.toISOString(),message,status:date.getTime()>Date.now()?'scheduled':'ready',createdAt:now(),templateId:input.templateId||'',deliveryMode,...prepared};}
-  function state(){for(const c of store.all('campaigns'))if(c.status==='scheduled'&&Date.parse(c.scheduledAt)<=Date.now())store.save('campaigns',{...c,status:'ready'});return {products:store.all('products'),campaigns:store.all('campaigns'),channels:store.all('channels'),templates:store.all('templates'),coupons:store.all('coupons'),settings:store.settings(),activity:store.all('activity'),integrations,shopee:shopee.status()};}
+  function state(){for(const c of store.all('campaigns'))if(c.status==='scheduled'&&Date.parse(c.scheduledAt)<=Date.now())store.save('campaigns',{...c,status:'ready'});return {products:store.all('products'),campaigns:store.all('campaigns'),channels:store.all('channels'),templates:store.all('templates'),coupons:store.all('coupons'),settings:store.settings(),activity:store.all('activity'),integrations,shopee:shopee.status(),modules:Object.fromEntries([...registry].map(([key,module])=>[key,module.state?.()??{}]))};}
   async function backup(){
     const snapshot=state(),zip=new JSZip(),manifest={version:1,exportedAt:now(),...snapshot};delete manifest.integrations;
     for(const field of ['products','campaigns','channels','templates','coupons'])if(snapshot[field].length>BACKUP_LIMITS.records)throw new ApiError('Backup ultrapassa 5.000 registros por lista. Dados preservados; faça uma cópia local com o aplicativo fechado.',413);
@@ -110,6 +115,7 @@ export function createApp({dataDir=path.resolve('data'),staticDir=path.resolve('
     if(req.method==='OPTIONS')throw new ApiError('Método não permitido.',405);
     let target;try{target=new URL(req.url,'http://'+host);}catch{throw new ApiError('Endereço inválido.');}
     const p=target.pathname,method=req.method;
+    for(const module of registry.values())if(module.gate&&!(await module.gate({req,res,path:p,method,target})))return;
     if(p==='/api/health'&&method==='GET')return send(res,200,{ok:true,app:'Vitraya Studio',version:1});
     if(p==='/api/state'&&method==='GET')return send(res,200,state());
     if(p==='/api/coupons'&&method==='GET')return send(res,200,store.all('coupons'));
@@ -155,6 +161,7 @@ export function createApp({dataDir=path.resolve('data'),staticDir=path.resolve('
         store.activity('Catálogo fictício de demonstração carregado.');
       });return send(res,201,{ok:true,products:4});
     }
+    for(const module of registry.values())if(module.handle&&await module.handle({req,res,path:p,method,target}))return;
     if(p.startsWith('/api/'))notFound();
     if(!['GET','HEAD'].includes(method))throw new ApiError('Método não permitido.',405);
     let root=staticDir,relative;try{relative=decodeURIComponent(p);}catch{throw new ApiError('Endereço inválido.');}
@@ -174,7 +181,7 @@ export function createApp({dataDir=path.resolve('data'),staticDir=path.resolve('
   }})().finally(()=>{queuePromise=null;});return queuePromise;}
   const server=http.createServer((req,res)=>{route(req,res).catch(error=>{if(res.headersSent){res.destroy();return;}if(!(error instanceof ApiError))console.error('Falha local do servidor:',error.message);send(res,error instanceof ApiError?error.status:500,{error:error instanceof ApiError?error.message:'Falha interna. Consulte o terminal local.'});});});
   server.requestTimeout=30_000;server.headersTimeout=15_000;server.maxHeadersCount=80;
-  return {server,store,dataDir,processQueue,async start(port=4317){await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,'127.0.0.1',()=>{server.removeListener('error',reject);resolve();});});stopped=false;if(queueIntervalMs>0){queueTimer=setInterval(()=>{processQueue().catch(()=>console.error('Falha ao processar fila local; confira campanhas antes de repetir.'));},queueIntervalMs);queueTimer.unref();}return {port:server.address().port,url:`http://127.0.0.1:${server.address().port}`};},async close(){stopped=true;if(queueTimer)clearInterval(queueTimer);if(queuePromise)await queuePromise;if(server.listening)await new Promise((resolve,reject)=>server.close(error=>error?reject(error):resolve()));store.close();}};
+  return {server,store,dataDir,processQueue,async start(port=4317){await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,'127.0.0.1',()=>{server.removeListener('error',reject);resolve();});});stopped=false;if(queueIntervalMs>0){queueTimer=setInterval(()=>{processQueue().catch(()=>console.error('Falha ao processar fila local; confira campanhas antes de repetir.'));},queueIntervalMs);queueTimer.unref();}for(const module of registry.values())await module.start?.();return {port:server.address().port,url:`http://127.0.0.1:${server.address().port}`};},async close(){stopped=true;if(queueTimer)clearInterval(queueTimer);if(queuePromise)await queuePromise;for(const module of [...registry.values()].reverse()){try{await module.close?.();}catch{}}if(server.listening)await new Promise((resolve,reject)=>server.close(error=>error?reject(error):resolve()));store.close();}};
 }
 
 export async function startServer(options={}){const app=createApp(options);const address=await app.start(options.port??4317);return {...app,...address};}

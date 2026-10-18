@@ -42,7 +42,7 @@ for(const width of [1440,390])test('Ofertas Shopee: conectar, buscar, importar c
  // Foto servida pelo próprio app, para o navegador exibir (CSP 'self') e o servidor baixar pela lista permitida.
  const upload=await (await page.request.post('/api/media',{headers:{'X-Vitraya-Client':'1'},multipart:{file:{name:'oferta.png',mimeType:'image/png',buffer:png}}})).json();
  shopee.state.image=appServer.url+upload.url;
- await page.goto('/');await nav(page,'Ofertas Shopee');
+ await page.goto('/');await nav(page,'Buscar e colar links');
  await expect(page.getByRole('heading',{name:'Achados da Shopee, já com o seu link.'})).toBeVisible();await noOverflow(page);await shot(page,'shopee-conectar-'+width);
  await page.getByLabel('AppID').fill(APP_ID);await page.getByLabel('Chave secreta').fill(SECRET);await page.getByRole('button',{name:'Salvar credenciais'}).click();
  await expect(page.locator('.status-pill',{hasText:'Teste a conexão'})).toBeVisible();

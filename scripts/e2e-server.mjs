@@ -6,11 +6,12 @@ import {createApp} from '../server/app.mjs';
 
 const projectDir=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 
-export async function isolatedServer(port=0,{shopeeOptions={}}={}){
+// moduleOptions injeta falsos nos módulos das etapas (ex.: WhatsApp sem rede); VITRAYA_DIST aponta o build de cada etapa.
+export async function isolatedServer(port=0,{shopeeOptions={},moduleOptions={}}={}){
  const tempRoot=path.resolve(os.tmpdir());
  const dataDir=await mkdtemp(path.join(tempRoot,'vitraya-e2e-'));
  if(!path.resolve(dataDir).startsWith(tempRoot+path.sep)||!path.basename(dataDir).startsWith('vitraya-e2e-'))throw new Error('Pasta temporária inesperada.');
- const options={dataDir,staticDir:path.join(projectDir,'dist'),queueIntervalMs:0,connectorOptions:{env:{}},shopeeOptions:{env:{},...shopeeOptions}};
+ const options={dataDir,staticDir:path.join(projectDir,process.env.VITRAYA_DIST||'dist'),queueIntervalMs:0,connectorOptions:{env:{}},shopeeOptions:{env:{},...shopeeOptions},moduleOptions};
  let app=createApp(options);
  let address=await app.start(port);
  return {

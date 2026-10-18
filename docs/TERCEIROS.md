@@ -29,3 +29,19 @@ Copyright (c) 2026 morluto — REA. Licença integral: [REA-MIT.txt](licencas/RE
 Copyright (c) 2026 Leonxlnx — Taste Skill. Licença integral: [TASTE-MIT.txt](licencas/TASTE-MIT.txt).
 
 Os três arquivos conservam integralmente os avisos de copyright, permissão MIT e ausência de garantia. Manter estes avisos ao redistribuir cópias ou partes substanciais das instruções.
+
+## Dependências adicionadas em 18/10/2026 (WhatsApp por QR Code)
+
+| Pacote | Versão | Licença | Uso |
+| --- | --- | --- | --- |
+| [baileys](https://github.com/WhiskeySockets/Baileys) | 7.0.0-rc14, com proveniência SLSA do repositório oficial | MIT | Conexão do WhatsApp Web por QR Code |
+| libsignal (dependência do baileys) | 6.0.0, com proveniência SLSA | **GPL-3.0** | Criptografia do protocolo Signal |
+| whatsapp-rust-bridge (dependência do baileys) | 0.5.4 (WebAssembly, sem script de instalação) | MIT | Utilidades de protocolo |
+| [qrcode](https://github.com/soldair/node-qrcode) | 1.5.4 | MIT | Desenhar o QR Code na tela |
+
+Instalados com versões exatas e `--ignore-scripts`; `npm audit --omit=dev` não apontou vulnerabilidades.
+
+Alertas:
+- **O Baileys é um cliente não oficial do WhatsApp.** O WhatsApp pode restringir ou banir números que usam cliente não oficial. O titular usa um número de teste.
+- A **GPL-3.0** da `libsignal` não restringe o uso pessoal e local. Se o app um dia for distribuído empacotado, avalie a licença antes.
+- Já existiram cópias falsas do Baileys no npm feitas para roubar sessões. Mantenha o nome exato `baileys`, a versão fixa e confira a proveniência antes de atualizar.

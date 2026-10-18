@@ -2,14 +2,28 @@
   "width": 834,
   "diagnostics": [
     {
-      "screen": "Ofertas Shopee",
+      "screen": "Início",
       "scrollWidth": 834,
       "viewport": 834,
       "unnamed": [],
       "tinyTargets": []
     },
     {
-      "screen": "Estúdio criativo",
+      "screen": "Buscar e colar links",
+      "scrollWidth": 834,
+      "viewport": 834,
+      "unnamed": [],
+      "tinyTargets": []
+    },
+    {
+      "screen": "WhatsApp",
+      "scrollWidth": 834,
+      "viewport": 834,
+      "unnamed": [],
+      "tinyTargets": []
+    },
+    {
+      "screen": "Outras conexões",
       "scrollWidth": 834,
       "viewport": 834,
       "unnamed": [],
@@ -23,14 +37,7 @@
       "tinyTargets": []
     },
     {
-      "screen": "Canais",
-      "scrollWidth": 834,
-      "viewport": 834,
-      "unnamed": [],
-      "tinyTargets": []
-    },
-    {
-      "screen": "Mensagens",
+      "screen": "Histórico de envios",
       "scrollWidth": 834,
       "viewport": 834,
       "unnamed": [],
@@ -50,14 +57,42 @@
       ]
     },
     {
-      "screen": "Integrações",
+      "screen": "Automação de envios",
       "scrollWidth": 834,
       "viewport": 834,
       "unnamed": [],
       "tinyTargets": []
     },
     {
-      "screen": "Preferências",
+      "screen": "Estúdio criativo",
+      "scrollWidth": 834,
+      "viewport": 834,
+      "unnamed": [],
+      "tinyTargets": []
+    },
+    {
+      "screen": "Mensagens",
+      "scrollWidth": 834,
+      "viewport": 834,
+      "unnamed": [],
+      "tinyTargets": []
+    },
+    {
+      "screen": "Canais",
+      "scrollWidth": 834,
+      "viewport": 834,
+      "unnamed": [],
+      "tinyTargets": []
+    },
+    {
+      "screen": "Perfil e configurações",
+      "scrollWidth": 834,
+      "viewport": 834,
+      "unnamed": [],
+      "tinyTargets": []
+    },
+    {
+      "screen": "Segurança",
       "scrollWidth": 834,
       "viewport": 834,
       "unnamed": [],
