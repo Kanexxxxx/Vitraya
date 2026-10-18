@@ -34,3 +34,11 @@
 - **Shopee Affiliate Open API implementada** (18/10): back-end `server/shopee.mjs`, rotas `/api/shopee*`, tela Ofertas Shopee, 6 testes de API com mock que recalcula a assinatura, 2 E2E. Contrato conferido contra o endpoint real sem credencial; nenhuma chamada com AppID real. Checkpoint: `docs/execucao/SHOPEE.md`.
 - Estado ao fim desta etapa: `npm test` 30/30, build ok, `npm run test:e2e` 9/9. Git continua sem commits (nada commitado).
 - **Próxima ação exata:** o titular roda `npm run build` e `npm start` (ou `Abrir Vitraya.cmd`), configura AppID/chave em Ofertas Shopee, clica em Testar conexão e faz uma busca; o resultado (ou a mensagem de erro) decide se `FIELDS` precisa de ajuste. Depois: Mercado Livre, SHEIN e TikTok Shop, cada um pela documentação oficial própria.
+
+## 18/10/2026 — repositório e separação do Nexa
+
+- Publicado em https://github.com/Kanexxxxx/Vitraya (público), ramo `main`. O primeiro commit é `43ef6ff`; os ZIPs de retomada, `data/`, `referencias/`, `node_modules/` e `dist/` ficam fora.
+- O histórico de afiliados que estava na pasta Nexa veio para `docs/historico/`. Agora o Nexa só tem a Nexakeep.
+- Para trabalhar no Vitraya, abra o VS Code **nesta pasta** (`Desktop\VitrayaStudio`), não na pasta Nexa.
+- A automação PAD (`Desktop\VITRAYA`) ainda não tem Git: outro chat estava mexendo no Linktree. Ela tem dados reais em `saida/`, que não podem ir para um repositório público.
+- Em andamento: conversão por cookie e por tag (Mercado Livre, SHEIN, Amazon etc.). Checkpoint em `docs/execucao/COOKIES-TAGS.md`.
