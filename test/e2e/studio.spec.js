@@ -12,6 +12,8 @@ const test=base.extend({
 });
 
 async function nav(page,label){
+ // Espera o app sair da tela de carregamento: isVisible() não espera, e no celular o menu ainda não existiria.
+ await page.locator('.app-shell').waitFor();
  const menu=page.getByRole('button',{name:'Abrir navegação',exact:true});
  if(await menu.isVisible())await menu.click();
  await page.locator('.sidebar').getByRole('button',{name:new RegExp('^'+label+'(?:\\s|$)')}).click();
@@ -59,11 +61,16 @@ test('fluxo pessoal: CRUD, importação com foto, mensagens, fila sem duplicar, 
  await importer.locator('.import-drop input').setInputFiles({name:'qa.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});
  await expect(importer.getByText('1 produto(s) válidos',{exact:true})).toBeVisible();
  await expect(importer.getByText('1 erro(s)',{exact:true})).toBeVisible();
- await importer.locator('.image-association input').setInputFiles({name:'foto-qa.png',mimeType:'image/png',buffer:png});
+ // Foto grande de propósito: a importação precisa reduzi-la para o tamanho de WhatsApp.
+ const bigPng=Buffer.from((await page.evaluate(()=>{const c=document.createElement('canvas');c.width=1600;c.height=1200;const x=c.getContext('2d');x.fillStyle='#e8d6f6';x.fillRect(0,0,1600,1200);x.fillStyle='#5143c7';x.fillRect(400,300,800,600);return c.toDataURL('image/png');})).split(',')[1],'base64');
+ await importer.locator('.image-association input:not([webkitdirectory])').setInputFiles({name:'foto-qa.png',mimeType:'image/png',buffer:bigPng});
+ await expect(importer.getByText('1 foto(s) na pasta · 1 de 1 produto(s) com foto',{exact:true})).toBeVisible();
  await importer.getByRole('button',{name:'Importar 1 produto(s)',exact:true}).click();
  await expect(importer.getByRole('heading',{name:'Catálogo atualizado'})).toBeVisible();
  await importer.getByRole('button',{name:'Ver meu catálogo',exact:true}).click();
  data=await state(page);expect(data.products).toHaveLength(2);expect(data.products.find(p=>p.title==='Importado fictício QA').image).toMatch(/^\/media\//);
+ const importedImage=data.products.find(p=>p.title==='Importado fictício QA').image;expect(importedImage).toMatch(/\.jpg$/);
+ const importedSize=await page.evaluate(async src=>{const i=new Image();i.src=src;await i.decode();return [i.naturalWidth,i.naturalHeight];},importedImage);expect(importedSize).toEqual([1080,810]);
 
  await nav(page,'Canais');
  await page.getByLabel('Nome',{exact:true}).fill('Canal fictício QA');
@@ -105,7 +112,7 @@ test('fluxo pessoal: CRUD, importação com foto, mensagens, fila sem duplicar, 
   if(format==='xlsx'){const book=new ExcelJS.Workbook();await book.xlsx.load(file.buffer);expect(book.worksheets[0].rowCount).toBe(3);}
  }
  const backup=await downloadBytes(page,()=>page.getByRole('link',{name:'Baixar backup com fotos',exact:true}).click());
- const zip=await JSZip.loadAsync(backup.buffer);const manifest=JSON.parse(await zip.file('manifest.json').async('string'));expect(manifest.products).toHaveLength(2);expect(manifest.campaigns).toHaveLength(1);expect(Object.keys(zip.files).filter(n=>/^media\/.+\.png$/.test(n))).toHaveLength(2);
+ const zip=await JSZip.loadAsync(backup.buffer);const manifest=JSON.parse(await zip.file('manifest.json').async('string'));expect(manifest.products).toHaveLength(2);expect(manifest.campaigns).toHaveLength(1);expect(Object.keys(zip.files).filter(n=>/^media\/.+\.(?:png|jpg|webp)$/.test(n))).toHaveLength(2);expect(Object.keys(zip.files).some(n=>/^media\/.+\.jpg$/.test(n))).toBe(true);
  await appServer.restart();await page.reload();
  await expect(page.getByRole('heading',{name:'Boas ofertas começam aqui.'})).toBeVisible();
  expect((await state(page)).products).toHaveLength(2);expect((await state(page)).settings.brand).toBe('Curadoria fictícia QA');

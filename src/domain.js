@@ -4,6 +4,20 @@ export function cents(value) { const str=String(value).replace(/R\$|\s/g,''); if
 export const discount = p => p.originalPrice>p.price?Math.round((1-p.price/p.originalPrice)*100):0;
 export const slug = value => String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,70)||'oferta';
 export const defaultBody = '✨ {titulo}\n\n{preco_original}💰 Por {preco}\n{desconto}{cupom}\n🛍️ Aproveite aqui:\n{link}\n\n{assinatura}\nPublicidade · link de afiliado. Preço e disponibilidade sujeitos à loja.';
+// Reduz a foto no navegador para ficar leve no WhatsApp (lado maior <= max, JPEG). Sem dependência nem envio externo.
+export async function shrinkImage(file,max=1080,quality=0.82){
+ const url=URL.createObjectURL(file);
+ try{
+  const img=await new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=()=>reject(new Error('Imagem inválida: '+(file.name||'arquivo')));i.src=url;});
+  const scale=Math.min(1,max/Math.max(img.naturalWidth||1,img.naturalHeight||1));
+  const w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));
+  const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+  const ctx=canvas.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);
+  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',quality));
+  if(!blob)throw new Error('Não foi possível processar '+(file.name||'a imagem'));
+  return blob;
+ }finally{URL.revokeObjectURL(url);}
+}
 export function messageFor(product,body=defaultBody,signature='') { const vars = {titulo:product.title,preco:money(product.price),preco_original:product.originalPrice>product.price?`De ${money(product.originalPrice)}\n`:'',desconto:discount(product)?`${discount(product)}% de desconto\n`:'',cupom:product.coupon?`🎟️ Cupom: ${product.coupon}\n`:'',link:product.affiliateUrl,loja:markets[product.marketplace]||product.marketplace,assinatura:signature};return body.replace(/\{([a-z_]+)\}/g,(all,key)=>vars[key]??all).replace(/\n{3,}/g,'\n\n').trim(); }
 export const dimensions = {'quadrado':[1080,1080],'feed':[1080,1350],'story':[1080,1920]};
 function fit(ctx,text,width){let value=String(text);if(ctx.measureText(value).width<=width)return value;while(value&&ctx.measureText(value+'…').width>width)value=value.slice(0,-1);return value+'…';}

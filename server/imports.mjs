@@ -3,10 +3,10 @@ import { ApiError, product } from './validation.mjs';
 
 const key = value => String(value).replace(/^\uFEFF/, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const aliases = {
-  title: ['title', 'titulo', 'nome', 'produto', 'nomeproduto', 'nomeproduto'],
+  title: ['title', 'titulo', 'nome', 'produto', 'nomeproduto', 'nomedoproduto', 'nomedoitem'],
   marketplace: ['marketplace', 'loja', 'plataforma', 'origem'],
-  price: ['price', 'pricecents', 'preco', 'valor', 'precopromocional', 'precovenda'],
-  originalPrice: ['originalprice', 'originalpricecents', 'precooriginal', 'precoantigo', 'precode'],
+  price: ['price', 'pricecents', 'preco', 'valor', 'precopromocional', 'precovenda', 'precobrl', 'precoatual', 'precopor'],
+  originalPrice: ['originalprice', 'originalpricecents', 'precooriginal', 'precoantigo', 'precode', 'precooriginalbrl', 'precoanterior'],
   affiliateUrl: ['affiliateurl', 'link', 'url', 'linkafiliado', 'linkafiliados', 'linkproduto', 'linkdeafiliado'],
   image: ['image', 'imagem', 'foto', 'imageurl', 'imagemurl'],
   coupon: ['coupon', 'cupom', 'codigocupom'],
@@ -14,10 +14,12 @@ const aliases = {
   description: ['description', 'descricao'],
   tags: ['tags', 'etiquetas'],
   status: ['status', 'situacao'],
+  gender: ['genero', 'sexo'],
 };
 const reverse = new Map(Object.entries(aliases).flatMap(([field, names]) => names.map(name => [name, field])));
 const marketplaces = { shein:'shein', shopee:'shopee', mercadolivre:'mercadolivre', ml:'mercadolivre', tiktok:'tiktok', tiktokshop:'tiktok', amazon:'amazon', outro:'outro', outros:'outro' };
-const statuses = { draft:'draft', rascunho:'draft', ready:'ready', pronto:'ready', ativo:'ready', archived:'archived', arquivado:'archived' };
+// Inclui situações de planilhas de automação (ex.: CONCLUIDO, PENDENTE_FOTO); o que não for reconhecido vira rascunho.
+const statuses = { draft:'draft', rascunho:'draft', ready:'ready', pronto:'ready', ativo:'ready', concluido:'ready', publicado:'ready', archived:'archived', arquivado:'archived', inativo:'archived', pendente:'draft', pendentefoto:'draft' };
 
 export function parseMoney(value, canonical = false) {
   if (value == null || value === '') return 0;
@@ -61,7 +63,7 @@ export function parseCsv(content) {
   return rows.map(r=>({raw:Object.fromEntries(headers.map((h,i)=>[h,r.values[i]??''])),line:r.line, extra:r.values.length>headers.length}));
 }
 
-function normalize(raw, line, warnings) {
+function normalize(raw, line, stats) {
   if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new ApiError('Linha precisa ser um objeto de produto.');
   const result={};
   for(const [original,value] of Object.entries(raw)) {
@@ -70,14 +72,29 @@ function normalize(raw, line, warnings) {
     if(field==='price'||field==='originalPrice')result[field]=parseMoney(value, /cents$/.test(k) || (['price','originalprice'].includes(k) && typeof value==='number'));
     else result[field]=value;
   }
-  if(result.marketplace!=null&&result.marketplace!=='')result.marketplace=marketplaces[key(result.marketplace)]??key(result.marketplace);
-  else result.marketplace='outro';
-  if(result.status!=null&&result.status!=='')result.status=statuses[key(result.status)]??result.status;else result.status='draft';
   if(typeof result.tags==='string')result.tags=result.tags.split(/[;,|]/).map(s=>s.trim()).filter(Boolean);
+  if(result.tags==null||result.tags==='')result.tags=[];
+  const extraTags=[];
+  // Loja fora da lista vira "outro" e o nome dela fica como etiqueta, em vez de recusar a linha.
+  if(result.marketplace!=null&&String(result.marketplace).trim()!==''){const known=marketplaces[key(result.marketplace)];if(known)result.marketplace=known;else{extraTags.push(String(result.marketplace).trim().slice(0,60));result.marketplace='outro';}}
+  else result.marketplace='outro';
+  let unknownStatus='';
+  if(result.status!=null&&String(result.status).trim()!==''){const known=statuses[key(result.status)];if(known)result.status=known;else{unknownStatus=String(result.status).trim().slice(0,30);result.status='draft';}}
+  else result.status='draft';
+  if(result.gender!=null){const gender=String(result.gender).trim();if(gender&&key(gender)!=='indefinido')extraTags.push(gender.slice(0,60));}
+  delete result.gender;
+  if(extraTags.length&&Array.isArray(result.tags))result.tags=[...result.tags,...extraTags];
   let imageName='';
-  if(result.image && !/^\/(?:media|demo)\//.test(result.image)) {imageName=String(result.image).split(/[\\/]/).at(-1).split(/[?#]/)[0];warnings.push({row:line,message:'Imagem externa não foi baixada. Associe um arquivo local na biblioteca de imagens.'});result.image='';}
+  if(result.image && !/^\/(?:media|demo)\//.test(result.image)) {imageName=String(result.image).split(/[\\/]/).at(-1).split(/[?#]/)[0];result.image='';}
   for(const f of ['title','coupon','affiliateUrl','image','category','description']) if(result[f]!=null && typeof result[f]!=='string')result[f]=String(result[f]);
-  return {...product(result),_rowNumber:line,...(imageName?{_imageName:imageName}:{})};
+  // Títulos de marketplace costumam passar do limite: encurta na última palavra inteira em vez de recusar.
+  let truncated=false;if(typeof result.title==='string'&&result.title.length>300){result.title=result.title.slice(0,299).replace(/\s+\S*$/,'')+'…';truncated=true;}
+  // "Pronto" exige link e preço; sem eles a linha entra como rascunho em vez de ser recusada.
+  let downgraded=false;if(result.status==='ready'&&(!result.affiliateUrl||!(result.price>0))){result.status='draft';downgraded=true;}
+  const value=product(result);
+  // Conta só depois de validar, para os avisos-resumo não incluírem linhas recusadas.
+  if(imageName)stats.imageNames++;if(unknownStatus)stats.unknownStatus.add(unknownStatus);if(downgraded)stats.downgraded++;if(truncated)stats.truncated++;
+  return {...value,_rowNumber:line,...(imageName?{_imageName:imageName}:{})};
 }
 
 export async function previewImport(buffer, filename) {
@@ -102,12 +119,17 @@ export async function previewImport(buffer, filename) {
   } else throw new ApiError('Importe um arquivo CSV, JSON ou XLSX.');
   if(source.length>5000)throw new ApiError('Limite de 5.000 produtos por importação.');
   if(!source.length)throw new ApiError('Nenhum produto encontrado no arquivo.');
-  const rows=[],errors=[],warnings=[];const links=new Set();
+  const rows=[],errors=[],warnings=[];const links=new Set();const stats={imageNames:0,unknownStatus:new Set(),downgraded:0,truncated:0};
   for(const item of source)try{
     if(item.extra)throw new ApiError('Linha tem mais valores do que o cabeçalho.');
-    const normalized=normalize(item.raw,item.line,warnings);if(normalized.affiliateUrl&&links.has(normalized.affiliateUrl))warnings.push({row:item.line,message:'Link duplicado no arquivo; a confirmação irá ignorar a repetição.'});
+    const normalized=normalize(item.raw,item.line,stats);if(normalized.affiliateUrl&&links.has(normalized.affiliateUrl))warnings.push({row:item.line,message:'Link duplicado no arquivo; a confirmação irá ignorar a repetição.'});
     if(normalized.affiliateUrl)links.add(normalized.affiliateUrl);rows.push(normalized);
   }catch(error){errors.push({row:item.line,message:error.message});}
+  // Avisos-resumo: um por assunto, em vez de um por linha.
+  if(stats.imageNames)warnings.push({row:null,message:`${stats.imageNames} produto(s) indicam a foto pelo nome do arquivo. Escolha a pasta de fotos abaixo para trazê-las.`});
+  if(stats.unknownStatus.size)warnings.push({row:null,message:`Situação não reconhecida (${[...stats.unknownStatus].slice(0,3).join(', ')}): essas linhas entraram como rascunho.`});
+  if(stats.downgraded)warnings.push({row:null,message:`${stats.downgraded} produto(s) marcados como prontos sem preço ou link entraram como rascunho.`});
+  if(stats.truncated)warnings.push({row:null,message:`${stats.truncated} título(s) acima de 300 caracteres foram encurtados na última palavra inteira.`});
   return {rows,errors,warnings};
 }
 

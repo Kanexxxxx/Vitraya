@@ -87,3 +87,9 @@
 @media(max-width:740px){.shopee-connection{align-items:flex-start}.shopee-connection .inline-actions{margin-left:0;width:100%}.shopee-toolbar .button{width:100%}.converter-form{grid-template-columns:1fr}.offer-stats{font-size:10px;gap:5px 9px}.shopee-selection .button{margin-left:0;width:100%}}
 .converter-form .field,.shopee-credentials-fields .field{margin-bottom:0}.converter-form .button{min-height:42px}
 .shopee-converter .section-title{margin-bottom:6px}.shopee-converter>p.muted{margin:0}
+/* Importação: associação de fotos (pasta ou arquivos) */
+.image-association{display:flex;flex-direction:column;gap:12px;border:1px dashed #d8cfe6;border-radius:10px;padding:16px;margin:18px 27px}
+.assoc-head{display:flex;align-items:flex-start;gap:12px;color:#6a547b}.assoc-head>svg{flex-shrink:0;margin-top:2px;color:var(--primary)}
+.assoc-head strong{display:block;font-size:13px;color:var(--ink);margin-bottom:3px}.assoc-head small{color:var(--muted);line-height:1.6}
+.assoc-actions{display:flex;gap:10px;flex-wrap:wrap}
+@media(max-width:740px){.image-association{margin:18px 20px}.assoc-actions .button{flex:1}}

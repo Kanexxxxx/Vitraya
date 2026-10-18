@@ -31,7 +31,8 @@ const test=base.extend({
  appServer:async({shopee},use)=>{const instance=await isolatedServer(0,{shopeeOptions:{apiBase:shopee.url+'/graphql',imageHosts:['127.0.0.1']}});try{await use(instance);}finally{await instance.close();}},
  baseURL:async({appServer},use)=>use(appServer.url),
 });
-async function nav(page,label){const menu=page.getByRole('button',{name:'Abrir navegação',exact:true});if(await menu.isVisible())await menu.click();await page.locator('.sidebar').getByRole('button',{name:new RegExp('^'+label+'(?:\\s|$)')}).click();}
+// Espera o app sair da tela de carregamento: isVisible() não espera, e no celular o menu ainda não existiria.
+async function nav(page,label){await page.locator('.app-shell').waitFor();const menu=page.getByRole('button',{name:'Abrir navegação',exact:true});if(await menu.isVisible())await menu.click();await page.locator('.sidebar').getByRole('button',{name:new RegExp('^'+label+'(?:\\s|$)')}).click();}
 async function noOverflow(page){const d=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));expect(d.scroll).toBeLessThanOrEqual(d.width+1);}
 async function shot(page,name){await mkdir(shots,{recursive:true});const close=page.getByRole('button',{name:'Fechar aviso',exact:true});if(await close.isVisible())await close.click();await page.evaluate(()=>{scrollTo(0,0);document.activeElement?.blur();});await page.screenshot({path:path.join(shots,name+'.png'),fullPage:true});}
 

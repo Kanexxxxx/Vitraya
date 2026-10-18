@@ -50,6 +50,45 @@ test('importação CSV brasileira, validação por linha, dedupe e XLSX/JSON rou
   const malformed=await f.request('/api/import/preview',{method:'POST',body:form('nome;preco\n"não terminou','x.csv')});assert.equal(malformed.status,400);
 });
 
+test('reimportar a mesma planilha com foto preenche a imagem do produto que já existia sem foto',async t=>{
+  const f=await fixture(t);
+  const row={title:'Top cropped',marketplace:'shein',price:3671,affiliateUrl:'https://onelink.shein.com/57/abc?x=1',status:'draft'};
+  const first=await json(await f.request('/api/import/commit',{method:'POST',body:{rows:[row]}}));assert.equal(first.imported,1);
+  const upload=await json(await f.request('/api/media',{method:'POST',body:form(png,'S64988N_1.jpg')}),201);
+  const second=await json(await f.request('/api/import/commit',{method:'POST',body:{rows:[{...row,image:upload.url}]}}));
+  assert.equal(second.imported,0);assert.equal(second.updated,1);assert.equal(second.skipped,0);
+  const state=await json(await f.request('/api/state'));assert.equal(state.products.length,1);assert.equal(state.products[0].image,upload.url);
+  const third=await json(await f.request('/api/import/commit',{method:'POST',body:{rows:[{...row,image:upload.url}]}}));
+  assert.equal(third.updated,0);assert.equal(third.skipped,1,'não deve trocar a foto de quem já tem');
+});
+
+test('planilha de automação (Situacao, PrecoBRL, Genero, título longo, loja desconhecida) entra sem rejeitar linhas',async t=>{
+  const f=await fixture(t);const longo='Sandália '+'Salto Alto Formal '.repeat(25);
+  const csv='ID;Loja;Nome;Categoria;PrecoBRL;PrecoOriginalBRL;LinkAfiliado;Foto;Situacao;Genero\r\n'+
+    `1;SHEIN;Top cropped;Croppeds;36,71;48,95;https://onelink.shein.com/57/a?x=1;C:\\Fotos\\F\\S64988N_1.jpg;CONCLUIDO;Feminino\r\n`+
+    `2;SHEIN;${longo};Sapatos;99,90;;https://onelink.shein.com/57/b;C:\\Fotos\\S2_1.jpg;PENDENTE_FOTO;Indefinido\r\n`+
+    `3;Magalu;Panela;Casa;120,00;;https://example.com/panela;;ALGO_NOVO;Unissex\r\n`;
+  const preview=await json(await f.request('/api/import/preview',{method:'POST',body:form(csv,'produtos.csv')}));
+  assert.equal(preview.errors.length,0,JSON.stringify(preview.errors));assert.equal(preview.rows.length,3);
+  const [top,sandalia,panela]=preview.rows;
+  assert.equal(top.marketplace,'shein');assert.equal(top.price,3671);assert.equal(top.originalPrice,4895);assert.equal(top.status,'ready');assert.equal(top._imageName,'S64988N_1.jpg');assert.deepEqual(top.tags,['Feminino']);
+  assert.equal(sandalia.status,'draft');assert.ok(sandalia.title.length<=300&&sandalia.title.endsWith('…'));assert.deepEqual(sandalia.tags,[],'gênero Indefinido não vira etiqueta');
+  assert.equal(panela.marketplace,'outro');assert.ok(panela.tags.includes('Magalu'));assert.ok(panela.tags.includes('Unissex'));assert.equal(panela.status,'draft');
+  const avisos=preview.warnings.map(w=>w.message).join(' | ');assert.match(avisos,/2 produto\(s\) indicam a foto/);assert.match(avisos,/1 título/);assert.match(avisos,/ALGO_NOVO/);assert.ok(preview.warnings.every(w=>w.row==null),'avisos-resumo, não um por linha');
+});
+
+test('exclusão em lote remove produtos e campanhas numa transação e recusa lista vazia',async t=>{
+  const f=await fixture(t);
+  const a=await json(await f.request('/api/products',{method:'POST',body:{...baseProduct,affiliateUrl:'https://example.com/a'}}),201);
+  const b=await json(await f.request('/api/products',{method:'POST',body:{...baseProduct,affiliateUrl:'https://example.com/b'}}),201);
+  const c=await json(await f.request('/api/products',{method:'POST',body:{...baseProduct,affiliateUrl:'https://example.com/c'}}),201);
+  const channel=await json(await f.request('/api/channels',{method:'POST',body:{name:'Canal',type:'whatsapp',url:'https://example.com/canal'}}),201);
+  await json(await f.request('/api/campaigns',{method:'POST',body:{productId:a.id,channelId:channel.id,message:'Oferta',scheduledAt:new Date(Date.now()+3600e3).toISOString()}}),201);
+  await json(await f.request('/api/products/delete',{method:'POST',body:{ids:[]}}),400);
+  const result=await json(await f.request('/api/products/delete',{method:'POST',body:{ids:[a.id,b.id,'nao-existe']}}));assert.equal(result.removed,2);
+  const state=await json(await f.request('/api/state'));assert.deepEqual(state.products.map(p=>p.id),[c.id]);assert.equal(state.campaigns.length,0);
+});
+
 test('upload reconhece bytes, serve imagem local e rejeita SVG/HTML e imagens ausentes',async t=>{
   const f=await fixture(t);
   const upload=await json(await f.request('/api/media',{method:'POST',body:form(png,'../foto.png')}),201);assert.match(upload.url,/^\/media\/[a-f0-9-]+\.png$/);

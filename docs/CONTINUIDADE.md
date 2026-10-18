@@ -42,3 +42,27 @@
 - Para trabalhar no Vitraya, abra o VS Code **nesta pasta** (`Desktop\VitrayaStudio`), não na pasta Nexa.
 - A automação PAD (`Desktop\VITRAYA`) ainda não tem Git: outro chat estava mexendo no Linktree. Ela tem dados reais em `saida/`, que não podem ir para um repositório público.
 - Em andamento: conversão por cookie e por tag (Mercado Livre, SHEIN, Amazon etc.). Checkpoint em `docs/execucao/COOKIES-TAGS.md`.
+
+## 18/10/2026 — T1, parte 1: importação com fotos
+
+- O titular importou 326 produtos e eles entraram **sem foto, com preço R$ 0 e como "outro"**. O leitor recusava os arquivos reais da VITRAYA: `Situacao` (CONCLUIDO) era lida como status inválido, e `PrecoBRL`, `PrecoOriginalBRL` e `Nome do produto` não eram reconhecidas.
+- Corrigido em `server/imports.mjs`:
+  - novos nomes de coluna; situações de automação mapeadas (o que for desconhecido vira rascunho, não erro);
+  - loja fora da lista vira "outro" e o nome dela vira etiqueta; gênero vira etiqueta;
+  - títulos acima de 300 caracteres são encurtados na última palavra inteira;
+  - um aviso-resumo por assunto, em vez de um aviso por linha.
+- Na importação, dá para escolher **a pasta de fotos inteira** (`webkitdirectory`). As fotos são casadas pelo nome do arquivo e **reduzidas no navegador** (`shrinkImage`: lado maior até 1.080 px, JPEG 0,82), sem dependência nova e sem nada sair do computador. Reimportar a mesma planilha preenche a foto de produto existente que não tinha nenhuma.
+- Catálogo: filtro **Sem foto** e **Excluir selecionados** (`POST /api/products/delete`, uma transação, remove também as campanhas).
+- Testes: `npm test` **33/33**; `npm run test:e2e` **9/9 em 3 execuções**. O E2E prova a redução: 1600×1200 vira JPEG de 1080×810. Corrigida uma corrida nos testes: `nav()` decidia abrir o menu do celular antes de o app carregar.
+- **Dados reais (pedido do titular):**
+  1. backup em `%LOCALAPPDATA%\VitrayaStudio\backups\antes-de-limpar-sem-foto-2026-10-18.zip` (326 produtos);
+  2. os 326 sem foto foram removidos;
+  3. reimportação pela própria tela do app, com `Documentos\VITRAYA\Catalogo\produtos.csv` e a pasta `Fotos`.
+  - Resultado: **326 produtos, 325 com foto, todos SHEIN, preços certos**; fotos com média de 116 KB e máximo de 255 KB.
+  - O único sem foto já vinha marcado `PENDENTE_FOTO` e ficou como rascunho.
+- Mapa de funções do painel de referência, feito a partir dos prints do titular: [REFERENCIA-PROMIUM-PAINEL.md](REFERENCIA-PROMIUM-PAINEL.md).
+- Segurança: um print expôs a Secret Key da Shopee; o titular confirmou que **revogou e trocou** a chave. Nenhum valor foi gravado.
+- **Próxima ação (T1, parte 2): WhatsApp.**
+  1. Conectar por **QR Code** na própria tela, como no painel de referência.
+  2. Listar grupos e canais da instância.
+  3. Envio em massa com limite diário (6 a 10) e **intervalo aleatório de 2 a 5 min**, no número de teste.
