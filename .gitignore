@@ -11,5 +11,5 @@ playwright-report/
 # Pacotes ZIP de retomada (cÃ³pias do prÃ³prio cÃ³digo-fonte)
 /*.zip
 
-# Produções de vídeo (mídia gerada, nunca commitar)
+# ProduÃ§Ãµes de vÃ­deo (mÃ­dia gerada, nunca commitar)
 producao/
