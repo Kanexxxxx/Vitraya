@@ -51,3 +51,4 @@ As cópias ficam fora do OneDrive. O `node_modules` de cada uma é uma **junçã
 ## Registro
 
 - 18/10/2026: base `51ad970` publicada; cinco cópias criadas e conferidas (34/34 testes e build na cópia 1); os cinco agentes disparados em paralelo.
+- 19/10/2026: o limite de uso da conta interrompeu os agentes duas vezes. Ficou salvo: etapa 1 com o servidor dos números por QR (`6f5d4dd`); etapa 4 com as rotas do histórico e preferências (`6f38cc4`); etapa 5 com a pesquisa das lojas (`85443b4`). As etapas 2, 3 e 5 tinham código sem commit, conferido na retomada. Os cinco foram retomados com commit obrigatório a cada marco.
