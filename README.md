@@ -56,3 +56,15 @@ O modo de desenvolvimento usa a interface em `http://127.0.0.1:4318` e a API em 
 Resultados reais e pendências de QA estão em [VALIDACAO.md](docs/VALIDACAO.md).
 
 O projeto é independente da Nexakeep. O alvo indicado pelo titular foi confirmado como [Promium](https://promium.space/). A [comparação funcional](docs/REFERENCIA-PROMIUM.md) registra documentação e telas públicas capturadas com REA, recursos locais e lacunas. O painel autenticado do fornecedor não foi acessado; paridade completa não foi demonstrada.
+
+## Continuidade e branches
+
+Comece por [CONTINUIDADE.md](docs/CONTINUIDADE.md) e pelos checkpoints em
+[docs/execucao](docs/execucao). Registros anteriores são históricos: não equivalem
+à validação da versão que estiver aberta. As frentes de trabalho locais devem ser
+revisadas e testadas antes da integração na main; worktrees podem guardar commits e
+alterações exclusivos e não são duplicatas descartáveis.
+
+Preserve o diretório de dados fora do Git. Testes de conectores usam provedores
+simulados; enviar mensagens reais ou usar credenciais de contas não faz parte da
+validação básica. Após cada integração, registre testes, build e E2E da versão integrada.
